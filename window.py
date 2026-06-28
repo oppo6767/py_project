@@ -1,9 +1,9 @@
 import sys
-from PySide6.QtWidgets import QApplication, QMainWindow
+from PySide6.QtWidgets import QApplication, QWidget
 from PySide6.QtCore import Qt
 
 # 창 화면 설정
-class MainWindow(QMainWindow):
+class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowFlags(Qt.WindowType.FramelessWindowHint)     # 상단 타이틀 바와 테두리를 완전히 제거 (윈도우 크기 버그 차단)
