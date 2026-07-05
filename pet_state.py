@@ -1,5 +1,6 @@
 from enum import Enum
 
+# 해당 애니메이션 동작이 반복되는지 여부를 나타내는 Enum 클래스
 class Condition(Enum):
     START = ("start", False)
     IDLE = ("idle", True)
@@ -13,6 +14,7 @@ class Condition(Enum):
     RELAX_2_END = ("relax_2_end", False)
     STOP = ("stop", False)
 
+    # 애니메이션 시트 키와 반복 여부를 초기화하는 생성자
     def __init__(self, sheet_key: str, loops: bool):
         self.sheet_key = sheet_key
         self.loops = loops
