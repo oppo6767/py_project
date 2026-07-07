@@ -29,9 +29,11 @@ WINDOW_WIDTH = DISPLAY_SIZE
 WINDOW_HEIGHT = DISPLAY_SIZE
 
 # 애니메이션
-DEFAULT_FRAME_INTERVAL_MS = 100        # PNG 실험용 고정 간격
-BLINK_INTERVAL_RANGE_MS = (3000, 7000) # 눈 깜빡임 랜덤 범위
+DEFAULT_FRAME_INTERVAL_MS = 100         # PNG 실험용 고정 간격
+MOTION_INTERVAL_RANGE_MS = (3000, 7000) # 모션 결정 대기 
+WALK_DURATION_RANGE_MS = (2000, 5000)   # 걷기 지속 시간 (새로)
 
 # 이동 / 위치
 MOVE_SPEED = 2                         # tick당 이동 px
+MOVE_TICK_MS = 16                      # 틱 시간
 TASKBAR_MARGIN = 0                     # 작업표시줄 위 여백 px
