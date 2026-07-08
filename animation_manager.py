@@ -17,7 +17,7 @@ class AnimationManager(QObject):
 
 from PySide6.QtCore import Signal, QTimer, QObject
 from PySide6.QtGui import QPixmap
-from config import DEFAULT_FRAME_DURATION_MS
+from config import DEFAULT_FRAME_INTERVAL_MS
 from dataclasses import dataclass
 
 # 애니메이션 데이터 구조 정의
@@ -45,7 +45,7 @@ class AnimationManager(QObject):
     # 애니메이션을 로드하여 저장소에 추가
     def load_animation(self, name, frames, durations=None, loop=True):
         if durations is None:
-            durations = [DEFAULT_FRAME_DURATION_MS] * len(frames)
+            durations = [DEFAULT_FRAME_INTERVAL_MS] * len(frames)
         self._loaded_animations[name] = Animation(frames=frames, durations=durations, loop=loop)
 
     # 애니메이션 재생

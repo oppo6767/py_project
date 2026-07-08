@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QApplication
 import settings_menu
 import config
 import random
+import sys
 
 class PetWidget(MainWindow):
     # 초기 상태 설정 및 애니메이션 매니저 생성
@@ -18,6 +19,7 @@ class PetWidget(MainWindow):
         self._setup_signals()                           # 애니메이션 매니저의 시그널 연결
         self._load_animations()                         # 애니메이션 로드 여부 확인용
         self.set_condition(Condition.START)             # 초기 상태에 맞는 애니메이션 재생
+        self._stop_requested = False
         
         # 배회 모션 설정
         self._timer = QTimer(self)                      # 타이머 설정
@@ -36,10 +38,9 @@ class PetWidget(MainWindow):
         self._timer.start(interval)                     # 타이머 시작
     
     # 배회 모션 종료 시
-    def _stop_walking(self):
+    def _stop_walking(self):  
         if self.current_condition in (Condition.MOVE_LEFT, Condition.MOVE_RIGHT):
-            self._move_timer.stop()
-            self.set_condition(Condition.IDLE)    
+            self._stop_requested = True
 
     # 애니메이션 매니저와 시그널 연결
     def _setup_signals(self):
@@ -118,7 +119,7 @@ class PetWidget(MainWindow):
         
         motion = random.choices(
             [Condition.RELAX_1, Condition.RELAX_2, Condition.MOVE_LEFT, Condition.MOVE_RIGHT], 
-            weights=[1, 1, 2, 2]
+            weights=[3, 3, 5, 5]
         )[0]
         self.set_condition(motion) # IDLE일 경우
 
@@ -137,13 +138,24 @@ class PetWidget(MainWindow):
         else:
             self.move(self.x() + config.MOVE_SPEED, self.y())
 
-        screenSize = QApplication.primaryScreen().geometry().width()
+        # 화면 좌/우 이동 계산
+        screenSize = QApplication.primaryScreen().availableGeometry().width()
         if self.x() + self.width() < 0:
             self.move(screenSize, self.y())
         elif self.x() > screenSize:
             self.move(-self.width(), self.y())
-    
 
+        # 화면 안에 걷기 종료가 뜰 경우
+        if self._stop_requested and (self.x() >=0 and self.x() + self.width() <= screenSize):
+            self._move_timer.stop()
+            self._stop_requested = False
+            self.set_condition(Condition.IDLE)
+    
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    Windows = PetWidget()
+    Windows.show()
+    app.exec()
 
 
 """
