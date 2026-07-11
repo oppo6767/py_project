@@ -21,12 +21,8 @@ SHEETS = {
 
 # 픽셀아트 / 스케일
 NATIVE_SIZE = 64                       # Aseprite 원본 (64×64)
-SCALE = 4                              # 화면 확대 배율
-DISPLAY_SIZE = NATIVE_SIZE * SCALE     # 256. SCALE만 바꾸면 창까지 연동
-
-# 캐릭터 생성 창 크기
-WINDOW_WIDTH = DISPLAY_SIZE
-WINDOW_HEIGHT = DISPLAY_SIZE
+LAPTOP_SCALE = 2                       # 노트북 화면 확대 배율
+DESKTOP_SCALE = 4                      # 데스크탑 화면 확대 배율
 
 # 애니메이션
 DEFAULT_FRAME_INTERVAL_MS = 100         # PNG 실험용 고정 간격

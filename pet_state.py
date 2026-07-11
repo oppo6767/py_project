@@ -3,7 +3,7 @@ from enum import Enum
 # 해당 애니메이션 동작이 반복되는지 여부를 나타내는 Enum 클래스
 class Condition(Enum):
     START = ("start", False)
-    IDLE = ("idle", True)
+    IDLE = ("idle", False)
     MOVE_LEFT = ("left", True)
     MOVE_RIGHT = ("right", True)
     RELAX_1 = ("relax_1", False)

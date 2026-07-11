@@ -1,3 +1,30 @@
+"""
+class PetWidget(PetWindow):
+
+  __init__            부모 창 띄우고 살림 차리기
+                      (매니저 소유 / 시작 상태 = APPEARING / 프레임 보관칸 비우기)
+  ─────────────
+  _setup_signals      매니저의 시그널 2개를 내 슬롯에 연결
+                      (프레임 바뀜 → 다시 그림 / 끝남 → 다음 상태)
+  ─────────────
+  _load_animations    config의 SHEETS 뒤져서 매니저에 애니 전부 등록
+                      (play가 동작하려면 미리 넣어둬야 함)
+  ─────────────
+  set_condition       상태 하나 받아서 → config 매핑 조회 → 매니저에 play 시킴
+                      (상태 → 모션 연결하는 지휘자)
+  ─────────────
+  _on_frame_changed   ★새 프레임 받으면 보관 + update() (→ 다시 그리라고 찌르기)
+  ─────────────
+  _on_animation_finished  안 도는 모션 끝났을 때 다음으로
+                          (지금은 APPEARING → IDLE 하나만)
+  ─────────────
+  paintEvent          보관한 프레임을 실제로 화면에 칠하기
+                      (뭉갬 끄기 / 배경 안 칠함 / 비었으면 그냥 넘김)
+  ─────────────
+  contextMenuEvent    우클릭 → 메뉴 띄우기
+                      ("설정" → 독립 창 열기 / "종료" → 끝내기)
+"""
+
 from window import MainWindow
 from animation_manager import AnimationManager
 from pet_state import Condition
@@ -20,22 +47,11 @@ class PetWidget(MainWindow):
         self._load_animations()                         # 애니메이션 로드 여부 확인용
         self.set_condition(Condition.START)             # 초기 상태에 맞는 애니메이션 재생
         self._stop_requested = False
+        self._end_requested = False
         
-        # 배회 모션 설정
-        self._timer = QTimer(self)                      # 타이머 설정
-        self._timer.setSingleShot(True)                 # 타이머 예약
-        self._timer.timeout.connect(self._random_move)  # 타이머 종료 시 연결
-        self._schedule_next()
-
         # 배회 시 설정
         self._move_timer = QTimer(self)
         self._move_timer.timeout.connect(self._move_tick)                           
-
-    # 다음 랜덤 타이머 설정
-    def _schedule_next(self):
-        low, high = config.MOTION_INTERVAL_RANGE_MS
-        interval = random.randint(low, high)
-        self._timer.start(interval)                     # 타이머 시작
     
     # 배회 모션 종료 시
     def _stop_walking(self):  
@@ -44,8 +60,9 @@ class PetWidget(MainWindow):
 
     # 애니메이션 매니저와 시그널 연결
     def _setup_signals(self):
-        self.animation_manager.frame_changed.connect(self._on_frame_changed) # 프레임 변경 시그널 연결
-        self.animation_manager.finished.connect(self._on_animation_finished) # 애니메이션 종료 시그널 연결
+        self.animation_manager.frame_changed.connect(self._on_frame_changed)   # 프레임 변경 시그널 연결
+        self.animation_manager.finished.connect(self._on_animation_finished)   # 애니메이션 종료 시그널 연결
+        self.animation_manager.loop_completed.connect(self._on_loop_completed) # loop 끝까지 돌았다는 시그널 연결
 
     # 애니메이션 로드 여부 확인용
     def _load_animations(self):
@@ -88,6 +105,16 @@ class PetWidget(MainWindow):
             self.set_condition(Condition.RELAX_2_LOOP)
         elif name == Condition.RELAX_2_END.sheet_key:     # 키가 relax1 end이면 IDLE 실행
             self.set_condition(Condition.IDLE)
+        elif name == Condition.IDLE.sheet_key:            # 키가 IDLE이면 다음 동작 선택
+            self._choose_next()
+
+    def _on_loop_completed(self, name):
+        if self._end_requested and name == Condition.RELAX_1_LOOP.sheet_key:
+            self.set_condition(Condition.RELAX_1_END)
+        elif self._end_requested and name == Condition.RELAX_2_LOOP.sheet_key:
+            self.set_condition(Condition.RELAX_2_END)
+        
+        self._end_requested = False
 
     # 화면에 현재 프레임 그리기
     def paintEvent(self, event):
@@ -103,25 +130,21 @@ class PetWidget(MainWindow):
     def mousePressEvent(self, event):
         if (event.button() == Qt.LeftButton):
             if self.current_condition == Condition.RELAX_1_LOOP:           # 쉬는 모션이 1일 경우
-                self.set_condition(Condition.RELAX_1_END)
+                self._end_requested = True
             elif self.current_condition == Condition.RELAX_2_LOOP:         # 쉬는 모션이 2일 경우
-                self.set_condition(Condition.RELAX_2_END)
+                self._end_requested = True
     
     # 우클릭 시 메뉴 띄우기
     def contextMenuEvent(self, event):
         pass
 
     # 캐릭터 자동 배회
-    def _random_move(self):
-        self._schedule_next()
-        if self.current_condition != Condition.IDLE:                              # IDLE가 아니면 넘기기 
-            return
-        
-        motion = random.choices(
-            [Condition.RELAX_1, Condition.RELAX_2, Condition.MOVE_LEFT, Condition.MOVE_RIGHT], 
-            weights=[3, 3, 5, 5]
-        )[0]
-        self.set_condition(motion) # IDLE일 경우
+    def _choose_next(self):
+        motion = random.choices(   # -s - 가중치(옵션) 때문에
+            [Condition.IDLE, Condition.MOVE_LEFT, Condition.MOVE_RIGHT, Condition.RELAX_1, Condition.RELAX_2], 
+            weights=[17, 13, 13, 0.5, 0.5]
+        )[0]                       # [0] - 랜덤으로 뽑는데 리스트 안의 값을 가져오기 위해서  
+        self.set_condition(motion) # IDLD의 다음 모션 보내기
 
         # 모션이 좌/우 배회 모션이면 종료 시간 설정
         if motion in (Condition.MOVE_LEFT, Condition.MOVE_RIGHT):
@@ -156,31 +179,3 @@ if __name__ == "__main__":
     Windows = PetWidget()
     Windows.show()
     app.exec()
-
-
-"""
-class PetWidget(PetWindow):
-
-  __init__            부모 창 띄우고 살림 차리기
-                      (매니저 소유 / 시작 상태 = APPEARING / 프레임 보관칸 비우기)
-  ─────────────
-  _setup_signals      매니저의 시그널 2개를 내 슬롯에 연결
-                      (프레임 바뀜 → 다시 그림 / 끝남 → 다음 상태)
-  ─────────────
-  _load_animations    config의 SHEETS 뒤져서 매니저에 애니 전부 등록
-                      (play가 동작하려면 미리 넣어둬야 함)
-  ─────────────
-  set_condition       상태 하나 받아서 → config 매핑 조회 → 매니저에 play 시킴
-                      (상태 → 모션 연결하는 지휘자)
-  ─────────────
-  _on_frame_changed   ★새 프레임 받으면 보관 + update() (→ 다시 그리라고 찌르기)
-  ─────────────
-  _on_animation_finished  안 도는 모션 끝났을 때 다음으로
-                          (지금은 APPEARING → IDLE 하나만)
-  ─────────────
-  paintEvent          보관한 프레임을 실제로 화면에 칠하기
-                      (뭉갬 끄기 / 배경 안 칠함 / 비었으면 그냥 넘김)
-  ─────────────
-  contextMenuEvent    우클릭 → 메뉴 띄우기
-                      ("설정" → 독립 창 열기 / "종료" → 끝내기)
-"""

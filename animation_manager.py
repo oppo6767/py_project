@@ -30,6 +30,7 @@ class Animation:
 class AnimationManager(QObject):
     frame_changed = Signal(QPixmap)   # 애니메이션 프레임이 변경될 때 발생하는 시그널
     finished = Signal(str)            # 애니메이션이 끝났을 때 발생하는 시그널
+    loop_completed = Signal(str)      # loop에서 해당 모션이 끝까지 돌았을 때 발생하는 시그널
 
     # 초기화
     def __init__(self, parent=None):
@@ -84,7 +85,8 @@ class AnimationManager(QObject):
         if self._index >= len(self._playing_animation.frames):
             if self._playing_animation.loop:                      # 루프 여부 확인
                 self._index = 0
-            else:                                                # 루프가 아니면 애니메이션 종료
+                self.loop_completed.emit(self._current_name)
+            else:                                                 # 루프가 아니면 애니메이션 종료
                 name = self._current_name
                 self.stop()
                 self.finished.emit(name)
