@@ -1,68 +1,31 @@
-"""
-class PetWidget(PetWindow):
-
-  __init__            부모 창 띄우고 살림 차리기
-                      (매니저 소유 / 시작 상태 = APPEARING / 프레임 보관칸 비우기)
-  ─────────────
-  _setup_signals      매니저의 시그널 2개를 내 슬롯에 연결
-                      (프레임 바뀜 → 다시 그림 / 끝남 → 다음 상태)
-  ─────────────
-  _load_animations    config의 SHEETS 뒤져서 매니저에 애니 전부 등록
-                      (play가 동작하려면 미리 넣어둬야 함)
-  ─────────────
-  set_condition       상태 하나 받아서 → config 매핑 조회 → 매니저에 play 시킴
-                      (상태 → 모션 연결하는 지휘자)
-  ─────────────
-  _on_frame_changed   ★새 프레임 받으면 보관 + update() (→ 다시 그리라고 찌르기)
-  ─────────────
-  _on_animation_finished  안 도는 모션 끝났을 때 다음으로
-                          (지금은 APPEARING → IDLE 하나만)
-  ─────────────
-  paintEvent          보관한 프레임을 실제로 화면에 칠하기
-                      (뭉갬 끄기 / 배경 안 칠함 / 비었으면 그냥 넘김)
-  ─────────────
-  contextMenuEvent    우클릭 → 메뉴 띄우기
-                      ("설정" → 독립 창 열기 / "종료" → 끝내기)
-"""
-
 from window import MainWindow
 from animation_manager import AnimationManager
+from pet_controller import PetController
 from pet_state import Condition
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QPainter
 from PySide6.QtWidgets import QApplication
 import settings_menu
 import config
-import random
 import sys
 
 class PetWidget(MainWindow):
     # 초기 상태 설정 및 애니메이션 매니저 생성
     def __init__(self):
         super().__init__()
-        self.animation_manager = AnimationManager(self) # 애니메이션 매니저 생성
         self.current_condition = Condition.START        # 초기 상태 설정
         self.current_pixmap = None                      # 현재 표시할 프레임 저장용
+        self.animation_manager = AnimationManager(self) # 애니메이션 매니저 생성
+        self.controller = PetController(self)
         self._setup_signals()                           # 애니메이션 매니저의 시그널 연결
         self._load_animations()                         # 애니메이션 로드 여부 확인용
-        self.set_condition(Condition.START)             # 초기 상태에 맞는 애니메이션 재생
-        self._stop_requested = False
-        self._end_requested = False
-        
-        # 배회 시 설정
-        self._move_timer = QTimer(self)
-        self._move_timer.timeout.connect(self._move_tick)                           
-    
-    # 배회 모션 종료 시
-    def _stop_walking(self):  
-        if self.current_condition in (Condition.MOVE_LEFT, Condition.MOVE_RIGHT):
-            self._stop_requested = True
+        self.set_condition(Condition.START)             # 초기 상태에 맞는 애니메이션 재생            
 
     # 애니메이션 매니저와 시그널 연결
     def _setup_signals(self):
         self.animation_manager.frame_changed.connect(self._on_frame_changed)   # 프레임 변경 시그널 연결
-        self.animation_manager.finished.connect(self._on_animation_finished)   # 애니메이션 종료 시그널 연결
-        self.animation_manager.loop_completed.connect(self._on_loop_completed) # loop 끝까지 돌았다는 시그널 연결
+        self.animation_manager.finished.connect(self.controller._on_animation_finished)   # 애니메이션 종료 시그널 연결
+        self.animation_manager.loop_completed.connect(self.controller._on_loop_completed) # loop 끝까지 돌았다는 시그널 연결
 
     # 애니메이션 로드 여부 확인용
     def _load_animations(self):
@@ -93,29 +56,6 @@ class PetWidget(MainWindow):
         self.current_pixmap = pixmap  # 시그널을 통해 받음 다음 프레임 한 장을 새로 갱신
         self.update()                 # 갱신한 것을 업데이트하기 -> paintEvent()
 
-    # 애니메이션 종료 시 다음 상태로 전환
-    def _on_animation_finished(self, name): 
-        if name == Condition.START.sheet_key:             # 키가 start이면 IDLE 실행
-            self.set_condition(Condition.IDLE)
-        elif name == Condition.RELAX_1.sheet_key:         # 키가 relax1이면 loop 실행
-            self.set_condition(Condition.RELAX_1_LOOP)
-        elif name == Condition.RELAX_1_END.sheet_key:     # 키가 relax1 end이면 IDLE 실행
-            self.set_condition(Condition.IDLE)
-        elif name == Condition.RELAX_2.sheet_key:         # 키가 relax2이면 loop 실행
-            self.set_condition(Condition.RELAX_2_LOOP)
-        elif name == Condition.RELAX_2_END.sheet_key:     # 키가 relax1 end이면 IDLE 실행
-            self.set_condition(Condition.IDLE)
-        elif name == Condition.IDLE.sheet_key:            # 키가 IDLE이면 다음 동작 선택
-            self._choose_next()
-
-    def _on_loop_completed(self, name):
-        if self._end_requested and name == Condition.RELAX_1_LOOP.sheet_key:
-            self.set_condition(Condition.RELAX_1_END)
-        elif self._end_requested and name == Condition.RELAX_2_LOOP.sheet_key:
-            self.set_condition(Condition.RELAX_2_END)
-        
-        self._end_requested = False
-
     # 화면에 현재 프레임 그리기
     def paintEvent(self, event):
         # current_pixmap가 비어있을 경우 메서드 넘기기
@@ -130,49 +70,13 @@ class PetWidget(MainWindow):
     def mousePressEvent(self, event):
         if (event.button() == Qt.LeftButton):
             if self.current_condition == Condition.RELAX_1_LOOP:           # 쉬는 모션이 1일 경우
-                self._end_requested = True
+                self.controller._end_requested = True
             elif self.current_condition == Condition.RELAX_2_LOOP:         # 쉬는 모션이 2일 경우
-                self._end_requested = True
+                self.controller._end_requested = True
     
     # 우클릭 시 메뉴 띄우기
     def contextMenuEvent(self, event):
         pass
-
-    # 캐릭터 자동 배회
-    def _choose_next(self):
-        motion = random.choices(   # -s - 가중치(옵션) 때문에
-            [Condition.IDLE, Condition.MOVE_LEFT, Condition.MOVE_RIGHT, Condition.RELAX_1, Condition.RELAX_2], 
-            weights=[17, 13, 13, 0.5, 0.5]
-        )[0]                       # [0] - 랜덤으로 뽑는데 리스트 안의 값을 가져오기 위해서  
-        self.set_condition(motion) # IDLD의 다음 모션 보내기
-
-        # 모션이 좌/우 배회 모션이면 종료 시간 설정
-        if motion in (Condition.MOVE_LEFT, Condition.MOVE_RIGHT):
-            low, high = config.WALK_DURATION_RANGE_MS
-            duration = random.randint(low, high)
-            self._move_timer.start(config.MOVE_TICK_MS)
-            QTimer.singleShot(duration, self._stop_walking)  # 한 번만 타이머 설정
-
-    # 캐릭터 자동 배회 시
-    def _move_tick(self):
-        # 좌/우 모션인 경우
-        if self.current_condition == Condition.MOVE_LEFT:
-            self.move(self.x() - config.MOVE_SPEED, self.y())
-        else:
-            self.move(self.x() + config.MOVE_SPEED, self.y())
-
-        # 화면 좌/우 이동 계산
-        screenSize = QApplication.primaryScreen().availableGeometry().width()
-        if self.x() + self.width() < 0:
-            self.move(screenSize, self.y())
-        elif self.x() > screenSize:
-            self.move(-self.width(), self.y())
-
-        # 화면 안에 걷기 종료가 뜰 경우
-        if self._stop_requested and (self.x() >=0 and self.x() + self.width() <= screenSize):
-            self._move_timer.stop()
-            self._stop_requested = False
-            self.set_condition(Condition.IDLE)
     
 if __name__ == "__main__":
     app = QApplication(sys.argv)

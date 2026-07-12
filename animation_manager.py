@@ -1,20 +1,3 @@
-"""
-class AnimationManager(QObject):
-
-  시그널 2개          바뀌는 시그널 / 끝나는 시그널
-  ─────────────
-  __init__           내부 살림 차리기 (상태 초기화 + 타이머)
-  ─────────────
-  등록 메서드          애니메이션 하나를 "저장소에 넣기"
-  ─────────────
-  재생 제어 메서드      play / stop / pause / resume
-  ─────────────
-  _on_timeout        ★프레임 넘기는 심장 (인덱스++ → emit)
-  ─────────────
-  _current_name       지금 뭐 재생 중인지 알려주는 프로퍼티
-
-"""
-
 from PySide6.QtCore import Signal, QTimer, QObject
 from PySide6.QtGui import QPixmap
 from config import DEFAULT_FRAME_INTERVAL_MS
