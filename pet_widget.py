@@ -2,10 +2,10 @@ from window import MainWindow
 from animation_manager import AnimationManager
 from pet_controller import PetController
 from pet_state import Condition
-from PySide6.QtCore import Qt
+from settings_menu import SettingMenu
+from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QPixmap, QPainter
 from PySide6.QtWidgets import QApplication
-import settings_menu
 import config
 import sys
 
@@ -17,15 +17,17 @@ class PetWidget(MainWindow):
         self.current_pixmap = None                      # 현재 표시할 프레임 저장용
         self.animation_manager = AnimationManager(self) # 애니메이션 매니저 생성
         self.controller = PetController(self)
+        self.menu = SettingMenu(self)
         self._setup_signals()                           # 애니메이션 매니저의 시그널 연결
         self._load_animations()                         # 애니메이션 로드 여부 확인용
         self.set_condition(Condition.START)             # 초기 상태에 맞는 애니메이션 재생            
 
     # 애니메이션 매니저와 시그널 연결
     def _setup_signals(self):
-        self.animation_manager.frame_changed.connect(self._on_frame_changed)   # 프레임 변경 시그널 연결
+        self.animation_manager.frame_changed.connect(self._on_frame_changed)              # 프레임 변경 시그널 연결
         self.animation_manager.finished.connect(self.controller._on_animation_finished)   # 애니메이션 종료 시그널 연결
         self.animation_manager.loop_completed.connect(self.controller._on_loop_completed) # loop 끝까지 돌았다는 시그널 연결
+        self.menu.system_stop.connect(self.controller._on_exit_requested)                 # 종료 버튼 클릭 시그널 연결 - 연결하는 곳 고민 필요
 
     # 애니메이션 로드 여부 확인용
     def _load_animations(self):
@@ -76,7 +78,9 @@ class PetWidget(MainWindow):
     
     # 우클릭 시 메뉴 띄우기
     def contextMenuEvent(self, event):
-        pass
+        pos = event.globalPos()
+        menu_h = self.menu.sizeHint().height()
+        self.menu.popup(QPoint(pos.x(), pos.y() - menu_h - 50))
     
 if __name__ == "__main__":
     app = QApplication(sys.argv)

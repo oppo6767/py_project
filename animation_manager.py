@@ -74,6 +74,7 @@ class AnimationManager(QObject):
                 self.stop()
                 self.finished.emit(name)
                 return
+            
         # 프레임 변경 시그널 발생 및 타이머 재시작
         self.frame_changed.emit(self._playing_animation.frames[self._index])
         self._timer.start(self._playing_animation.durations[self._index])
