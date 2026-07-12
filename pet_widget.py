@@ -5,9 +5,7 @@ from pet_state import Condition
 from settings_menu import SettingMenu
 from PySide6.QtCore import Qt, QPoint
 from PySide6.QtGui import QPixmap, QPainter
-from PySide6.QtWidgets import QApplication
 import config
-import sys
 
 class PetWidget(MainWindow):
     # 초기 상태 설정 및 애니메이션 매니저 생성
@@ -81,9 +79,3 @@ class PetWidget(MainWindow):
         pos = event.globalPos()
         menu_h = self.menu.sizeHint().height()
         self.menu.popup(QPoint(pos.x(), pos.y() - menu_h - 50))
-    
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    Windows = PetWidget()
-    Windows.show()
-    app.exec()
