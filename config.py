@@ -1,8 +1,12 @@
 from pathlib import Path
+import sys
 
-# 경로
-BASE_DIR = Path(__file__).resolve().parent # png가 저장된 프로젝트 폴더 위치 찾기
-ASSET_DIR = BASE_DIR / "assets"            # png가 저장된 하위 폴더 지정
+# 경로  만약 exe로 실행할 경우 sys._MEIPASS를 아닐 경우 Path(__file__).resolve().parent
+if hasattr(sys, '_MEIPASS'):
+    BASE_DIR = Path(sys._MEIPASS)
+else:   
+    BASE_DIR = Path(__file__).resolve().parent  # png가 저장된 프로젝트 폴더 위치 찾기
+ASSET_DIR = BASE_DIR / "assets"                 # png가 저장된 하위 폴더 지정
 
 # 스프라이트 시트 명세
 SHEETS = {
