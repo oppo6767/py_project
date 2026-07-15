@@ -26,7 +26,7 @@
 - 설치가 되어 있지 않은 경우 Tag에 .exe를 다운로드 해서 실행 (이 프로그램은 안전하니 보안 문제가 떠도 그냥 실행하셈)
 
 ## 디렉터리 구조
-"""text
+```text
 Pyhon_Project/
 ├── assets/
 |    ├── .pngs
@@ -38,4 +38,4 @@ Pyhon_Project/
 ├── pet_widget.py
 ├── settings_manu.py
 └── window.py
-"""
+```
